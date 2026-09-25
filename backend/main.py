@@ -6,15 +6,19 @@ from typing import List, Optional
 from fastapi import FastAPI, Depends, HTTPException, Query, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr, Field
-from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, ForeignKey, Enum as SQLEnum, func, or_
+from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, ForeignKey, func, or_
 from sqlalchemy.orm import sessionmaker, declarative_base, Session, relationship
 
 # Database setup
-SQLALCHEMY_DATABASE_URL = "sqlite:///./tickets.db"
+SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./tickets.db")
 
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
-)
+# Fix Render PostgreSQL URL scheme if needed
+if SQLALCHEMY_DATABASE_URL.startswith("postgres://"):
+    SQLALCHEMY_DATABASE_URL = SQLALCHEMY_DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
+connect_args = {"check_same_thread": False} if "sqlite" in SQLALCHEMY_DATABASE_URL else {}
+
+engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args=connect_args)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
@@ -73,7 +77,7 @@ class TicketCreate(BaseModel):
 class TicketUpdate(BaseModel):
     status: Optional[str] = None # Open, In Progress, Closed
     priority: Optional[str] = None
-    notes: Optional[str] = None # Optional note added during status update
+    notes: Optional[str] = None
     author_name: Optional[str] = "Support Agent"
 
 class TicketListItem(BaseModel):
@@ -117,10 +121,12 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# CORS Middleware
+# CORS Middleware for local and production deployment
+origins = ["*"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -186,7 +192,6 @@ def seed_initial_data(db: Session):
             db.commit()
             db.refresh(ticket)
             
-            # Initial note
             note = NoteDB(
                 ticket_id=t_id,
                 author_name="System Bot",
@@ -204,7 +209,7 @@ def startup_event():
     finally:
         db.close()
 
-# API Endpoints as specified in requirements
+# API Endpoints
 @app.get("/")
 def root():
     return {"message": "Datastraw Ticket CRM API is running smoothly!", "docs": "/docs"}
@@ -242,7 +247,6 @@ def create_ticket(ticket_data: TicketCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_ticket)
 
-    # Initial creation audit note
     initial_note = NoteDB(
         ticket_id=ticket_id,
         author_name="System",
@@ -304,7 +308,6 @@ def update_ticket(ticket_id: str, update_data: TicketUpdate, db: Session = Depen
         ticket.status = update_data.status
         updated = True
         
-        # Auto add note for status change
         status_note = NoteDB(
             ticket_id=ticket.ticket_id,
             author_name=update_data.author_name or "Support Agent",

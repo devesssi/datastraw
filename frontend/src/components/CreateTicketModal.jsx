@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { X, PlusCircle, AlertCircle } from 'lucide-react';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+
 export function CreateTicketModal({ isOpen, onClose, onTicketCreated }) {
   const [formData, setFormData] = useState({
     customer_name: '',
@@ -24,7 +26,7 @@ export function CreateTicketModal({ isOpen, onClose, onTicketCreated }) {
     setError('');
 
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/tickets', {
+      const response = await fetch(`${API_BASE_URL}/api/tickets`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)

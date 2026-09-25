@@ -13,6 +13,8 @@ import {
 import { CreateTicketModal } from './components/CreateTicketModal';
 import { TicketDetailModal } from './components/TicketDetailModal';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+
 export default function App() {
   const [tickets, setTickets] = useState([]);
   const [stats, setStats] = useState({ total: 0, open: 0, in_progress: 0, closed: 0 });
@@ -36,8 +38,8 @@ export default function App() {
       }
 
       const [ticketsRes, statsRes] = await Promise.all([
-        fetch(`http://127.0.0.1:8000/api/tickets?${params.toString()}`),
-        fetch(`http://127.0.0.1:8000/api/stats`)
+        fetch(`${API_BASE_URL}/api/tickets?${params.toString()}`),
+        fetch(`${API_BASE_URL}/api/stats`)
       ]);
 
       if (ticketsRes.ok) {

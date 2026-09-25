@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { X, Clock, MessageSquare, Send, User, Mail } from 'lucide-react';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+
 export function TicketDetailModal({ ticketId, isOpen, onClose, onTicketUpdated }) {
   const [ticket, setTicket] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -18,7 +20,7 @@ export function TicketDetailModal({ ticketId, isOpen, onClose, onTicketUpdated }
   const fetchTicket = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`http://127.0.0.1:8000/api/tickets/${ticketId}`);
+      const res = await fetch(`${API_BASE_URL}/api/tickets/${ticketId}`);
       if (!res.ok) throw new Error('Failed to load ticket details');
       const data = await res.json();
       setTicket(data);
@@ -33,7 +35,7 @@ export function TicketDetailModal({ ticketId, isOpen, onClose, onTicketUpdated }
 
   const handleStatusOrPriorityChange = async (newStat, newPrio) => {
     try {
-      const res = await fetch(`http://127.0.0.1:8000/api/tickets/${ticketId}`, {
+      const res = await fetch(`${API_BASE_URL}/api/tickets/${ticketId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -57,7 +59,7 @@ export function TicketDetailModal({ ticketId, isOpen, onClose, onTicketUpdated }
 
     setSubmittingNote(true);
     try {
-      const res = await fetch(`http://127.0.0.1:8000/api/tickets/${ticketId}/notes`, {
+      const res = await fetch(`${API_BASE_URL}/api/tickets/${ticketId}/notes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
